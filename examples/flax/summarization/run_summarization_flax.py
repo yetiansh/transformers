@@ -59,6 +59,19 @@ from transformers import (
 from transformers.utils import get_full_repo_name, is_offline_mode, send_example_telemetry
 
 
+import alpa
+from alpa.testing import assert_allclose
+import copy
+from flax import linen as nn
+from flax.training.train_state import TrainState
+import jax
+import jax.numpy as jnp
+from jax import random
+import optax
+import ray
+
+alpa.util.disable_tqdm_globally()
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -397,6 +410,10 @@ def create_learning_rate_fn(
 
 
 def main():
+    # Initialize ray cluster
+    ray.init()
+    alpa.init(cluster="ray")
+
     # See all possible arguments in src/transformers/training_args.py
     # or by passing the --help flag to this script.
     # We now keep distinct sets of args, for a cleaner separation of concerns.
@@ -788,6 +805,11 @@ def main():
         return loss
 
     # Define gradient update step fn
+    @alpa.parallelize(method=alpa.PipeshardParallel(
+        num_micro_batches=int(os.getenv("NUM_MICRO_BATCHES")),
+        layer_option=alpa.AutoLayerOption(layer_num=2),
+        layer_option="manual"
+    ))
     def train_step(state, batch, label_smoothing_factor=0.0):
         dropout_rng, new_dropout_rng = jax.random.split(state.dropout_rng)
 
@@ -797,7 +819,7 @@ def main():
             loss = loss_fn(logits, labels, batch["decoder_attention_mask"], label_smoothing_factor)
             return loss
 
-        grad_fn = jax.value_and_grad(compute_loss)
+        grad_fn = alpa.value_and_grad(compute_loss)
         loss, grad = grad_fn(state.params)
         grad = jax.lax.pmean(grad, "batch")
 
@@ -976,6 +998,8 @@ def main():
             path = os.path.join(training_args.output_dir, "test_results.json")
             with open(path, "w") as f:
                 json.dump(rouge_metrics, f, indent=4, sort_keys=True)
+    
+    alpa.shutdown()
 
 
 if __name__ == "__main__":
