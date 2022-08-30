@@ -43,7 +43,7 @@ import optax
 import transformers
 from filelock import FileLock
 from flax import jax_utils, traverse_util
-from flax.jax_utils import pad_shard_unpad, unreplicate
+from flax.jax_utils import unreplicate
 from flax.training import train_state
 from flax.training.common_utils import get_metrics, onehot, shard, shard_prng_key
 from huggingface_hub import Repository
@@ -117,9 +117,6 @@ class TrainingArguments:
     adam_beta1: float = field(default=0.9, metadata={"help": "Beta1 for AdamW optimizer"})
     adam_beta2: float = field(default=0.999, metadata={"help": "Beta2 for AdamW optimizer"})
     adam_epsilon: float = field(default=1e-8, metadata={"help": "Epsilon for AdamW optimizer."})
-    label_smoothing_factor: float = field(
-        default=0.0, metadata={"help": "The label smoothing epsilon to apply (zero means no label smoothing)."}
-    )
     adafactor: bool = field(default=False, metadata={"help": "Whether or not to replace AdamW by Adafactor."})
     num_train_epochs: float = field(default=3.0, metadata={"help": "Total number of training epochs to perform."})
     warmup_steps: int = field(default=0, metadata={"help": "Linear warmup over warmup_steps."})
@@ -382,7 +379,7 @@ def data_loader(rng: jax.random.PRNGKey, dataset: Dataset, batch_size: int, shuf
         yield batch
 
 
-def write_metric(summary_writer, train_metrics, eval_metrics, train_time, step):
+def write_metric(summary_writer, train_metrics, train_time, step):
     summary_writer.scalar("train_time", train_time, step)
 
     train_metrics = get_metrics(train_metrics)
@@ -390,9 +387,6 @@ def write_metric(summary_writer, train_metrics, eval_metrics, train_time, step):
         tag = f"train_{key}"
         for i, val in enumerate(vals):
             summary_writer.scalar(tag, val, step - len(vals) + i + 1)
-
-    for metric_name, value in eval_metrics.items():
-        summary_writer.scalar(f"eval_{metric_name}", value, step)
 
 
 def create_learning_rate_fn(
@@ -783,13 +777,13 @@ def main():
     state = TrainState.create(apply_fn=model.__call__, params=model.params, tx=adamw, dropout_rng=dropout_rng)
 
     # label smoothed cross entropy
-    def loss_fn(logits, labels, padding_mask, label_smoothing_factor=0.0):
+    def loss_fn(logits, labels, padding_mask):
         """
         The label smoothing implementation is adapted from Flax's official example:
         https://github.com/google/flax/blob/87a211135c6a377c8f29048a1cac3840e38b9da4/examples/wmt/train.py#L104
         """
         vocab_size = logits.shape[-1]
-        confidence = 1.0 - label_smoothing_factor
+        confidence = 1.0
         low_confidence = (1.0 - confidence) / (vocab_size - 1)
         normalizing_constant = -(
             confidence * jnp.log(confidence) + (vocab_size - 1) * low_confidence * jnp.log(low_confidence + 1e-20)
@@ -808,15 +802,14 @@ def main():
     @alpa.parallelize(method=alpa.PipeshardParallel(
         num_micro_batches=int(os.getenv("NUM_MICRO_BATCHES")),
         layer_option=alpa.AutoLayerOption(layer_num=2),
-        layer_option="manual"
     ))
-    def train_step(state, batch, label_smoothing_factor=0.0):
+    def train_step(state, batch):
         dropout_rng, new_dropout_rng = jax.random.split(state.dropout_rng)
 
         def compute_loss(params):
             labels = batch.pop("labels")
             logits = state.apply_fn(**batch, params=params, dropout_rng=dropout_rng, train=True)[0]
-            loss = loss_fn(logits, labels, batch["decoder_attention_mask"], label_smoothing_factor)
+            loss = loss_fn(logits, labels, batch["decoder_attention_mask"])
             return loss
 
         grad_fn = alpa.value_and_grad(compute_loss)
@@ -828,18 +821,7 @@ def main():
         metrics = {"loss": loss, "learning_rate": linear_decay_lr_schedule_fn(state.step)}
         metrics = jax.lax.pmean(metrics, axis_name="batch")
 
-        return new_state, metrics
-
-    # Define eval fn
-    def eval_step(params, batch, label_smoothing_factor=0.0):
-        labels = batch.pop("labels")
-        logits = model(**batch, params=params, train=False)[0]
-        loss = loss_fn(logits, labels, batch["decoder_attention_mask"], label_smoothing_factor)
-
-        # summarize metrics
-        metrics = {"loss": loss}
-        metrics = jax.lax.pmean(metrics, axis_name="batch")
-        return metrics
+        return new_state.value, metrics.value
 
     # Define generation function
     max_length = (
@@ -848,17 +830,10 @@ def main():
     num_beams = data_args.num_beams if data_args.num_beams is not None else model.config.num_beams
     gen_kwargs = {"max_length": max_length, "num_beams": num_beams}
 
-    def generate_step(params, batch):
-        model.params = params
-        output_ids = model.generate(batch["input_ids"], attention_mask=batch["attention_mask"], **gen_kwargs)
-        return output_ids.sequences
-
     # Create parallel version of the train and eval step
     p_train_step = jax.pmap(
-        partial(train_step, label_smoothing_factor=training_args.label_smoothing_factor), "batch", donate_argnums=(0,)
+        train_step, "batch", donate_argnums=(0,)
     )
-    p_eval_step = jax.pmap(partial(eval_step, label_smoothing_factor=training_args.label_smoothing_factor), "batch")
-    p_generate_step = jax.pmap(generate_step, "batch")
 
     # Replicate the train state on each device
     state = state.replicate()
@@ -886,7 +861,10 @@ def main():
         # train
         for _ in tqdm(range(steps_per_epoch), desc="Training...", position=1, leave=False):
             batch = next(train_loader)
-            batch = shard(batch)
+            batch_ = {}
+            for key, val in batch.items():
+                batch_[key] = val.value
+            batch = shard(batch_)
             state, train_metric = p_train_step(state, batch)
             train_metrics.append(train_metric)
 
@@ -899,49 +877,15 @@ def main():
             f" {train_metric['learning_rate']})"
         )
 
-        # ======================== Evaluating ==============================
-        eval_metrics = []
-        eval_preds = []
-        eval_labels = []
-
-        eval_loader = data_loader(input_rng, eval_dataset, eval_batch_size, drop_last=False)
-        eval_steps = math.ceil(len(eval_dataset) / eval_batch_size)
-        for _ in tqdm(range(eval_steps), desc="Evaluating...", position=2, leave=False):
-            # Model forward
-            batch = next(eval_loader)
-            labels = batch["labels"]
-
-            metrics = pad_shard_unpad(p_eval_step, static_return=True)(
-                state.params, batch, min_device_batch=per_device_eval_batch_size
-            )
-            eval_metrics.append(metrics)
-
-            # generation
-            if data_args.predict_with_generate:
-                generated_ids = pad_shard_unpad(p_generate_step)(state.params, batch)
-                eval_preds.extend(jax.device_get(generated_ids.reshape(-1, gen_kwargs["max_length"])))
-                eval_labels.extend(labels)
-
-        # normalize eval metrics
-        eval_metrics = get_metrics(eval_metrics)
-        eval_metrics = jax.tree_map(jnp.mean, eval_metrics)
-
-        # compute ROUGE metrics
-        rouge_desc = ""
-        if data_args.predict_with_generate:
-            rouge_metrics = compute_metrics(eval_preds, eval_labels)
-            eval_metrics.update(rouge_metrics)
-            rouge_desc = " ".join([f"Eval {key}: {value} |" for key, value in rouge_metrics.items()])
-
         # Print metrics and update progress bar
-        desc = f"Epoch... ({epoch + 1}/{num_epochs} | Eval Loss: {eval_metrics['loss']} | {rouge_desc})"
+        desc = f"Epoch... ({epoch + 1}/{num_epochs}"
         epochs.write(desc)
         epochs.desc = desc
 
         # Save metrics
         if has_tensorboard and jax.process_index() == 0:
             cur_step = epoch * (len(train_dataset) // train_batch_size)
-            write_metric(summary_writer, train_metrics, eval_metrics, train_time, cur_step)
+            write_metric(summary_writer, train_metrics, train_time, cur_step)
 
         # save checkpoint after each epoch and push checkpoint to the hub
         if jax.process_index() == 0:
@@ -951,54 +895,6 @@ def main():
             if training_args.push_to_hub:
                 repo.push_to_hub(commit_message=f"Saving weights and logs of epoch {epoch}", blocking=False)
 
-    # ======================== Prediction loop ==============================
-    if training_args.do_predict:
-        logger.info("*** Predict ***")
-
-        pred_metrics = []
-        pred_generations = []
-        pred_labels = []
-
-        pred_loader = data_loader(input_rng, predict_dataset, eval_batch_size, drop_last=False)
-        pred_steps = math.ceil(len(predict_dataset) / eval_batch_size)
-        for _ in tqdm(range(pred_steps), desc="Predicting...", position=2, leave=False):
-            # Model forward
-            batch = next(pred_loader)
-            labels = batch["labels"]
-
-            metrics = pad_shard_unpad(p_eval_step, static_return=True)(
-                state.params, batch, min_device_batch=per_device_eval_batch_size
-            )
-            pred_metrics.append(metrics)
-
-            # generation
-            if data_args.predict_with_generate:
-                generated_ids = pad_shard_unpad(p_generate_step)(state.params, batch)
-                pred_generations.extend(jax.device_get(generated_ids.reshape(-1, gen_kwargs["max_length"])))
-                pred_labels.extend(labels)
-
-        # normalize prediction metrics
-        pred_metrics = get_metrics(pred_metrics)
-        pred_metrics = jax.tree_map(jnp.mean, pred_metrics)
-
-        # compute ROUGE metrics
-        rouge_desc = ""
-        if data_args.predict_with_generate:
-            rouge_metrics = compute_metrics(pred_generations, pred_labels)
-            pred_metrics.update(rouge_metrics)
-            rouge_desc = " ".join([f"Predict {key}: {value} |" for key, value in rouge_metrics.items()])
-
-        # Print metrics
-        desc = f"Predict Loss: {pred_metrics['loss']} | {rouge_desc})"
-        logger.info(desc)
-
-        # save final metrics in json
-        if jax.process_index() == 0:
-            rouge_metrics = {f"test_{metric_name}": value for metric_name, value in rouge_metrics.items()}
-            path = os.path.join(training_args.output_dir, "test_results.json")
-            with open(path, "w") as f:
-                json.dump(rouge_metrics, f, indent=4, sort_keys=True)
-    
     alpa.shutdown()
 
 
