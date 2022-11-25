@@ -1422,8 +1422,6 @@ class LxmertRelationalModel(LxmertPreTrainedModel):
         if visual_pos is None:
             raise ValueError("`visual_pos` cannot be `None`")
 
-        device = visual_feats.device
-
         # Process the visual attention mask
         if visual_attention_mask is not None:
             extended_visual_attention_mask = visual_attention_mask.unsqueeze(1).unsqueeze(2)
