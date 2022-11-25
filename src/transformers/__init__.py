@@ -1526,9 +1526,15 @@ else:
     _import_structure["models.lxmert"].extend(
         [
             "LxmertEncoder",
+            "LxmertLanguageEncoder",
+            "LxmertRelationalEncoder",
+            "LxmertCrossModalityEncoder",
             "LxmertForPreTraining",
             "LxmertForQuestionAnswering",
             "LxmertModel",
+            "LxmertLanguageModel",
+            "LxmertRelationalModel",
+            "LxmertCrossModalityModel",
             "LxmertPreTrainedModel",
             "LxmertVisualFeatureEncoder",
             "LxmertXLayer",

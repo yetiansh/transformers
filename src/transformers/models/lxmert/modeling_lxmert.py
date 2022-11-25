@@ -1299,7 +1299,7 @@ class LxmertLanguageModel(LxmertPreTrainedModel):
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
-    ) -> Union[LxmertModelOutput, Tuple[torch.FloatTensor]]:
+    ) -> Union[LxmertLanguageModelOutput, Tuple[torch.FloatTensor]]:
 
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -1409,7 +1409,7 @@ class LxmertRelationalModel(LxmertPreTrainedModel):
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
-    ) -> Union[LxmertModelOutput, Tuple[torch.FloatTensor]]:
+    ) -> Union[LxmertRelationalModelOutput, Tuple[torch.FloatTensor]]:
 
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -1500,7 +1500,7 @@ class LxmertCrossModalityModel(LxmertPreTrainedModel):
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
-    ) -> Union[LxmertModelOutput, Tuple[torch.FloatTensor]]:
+    ) -> Union[LxmertCrossModalityModelOutput, Tuple[torch.FloatTensor]]:
 
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
