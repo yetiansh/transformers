@@ -104,6 +104,106 @@ class LxmertModelOutput(ModelOutput):
 
 
 @dataclass
+class LxmertLanguageModelOutput(ModelOutput):
+    """
+    Lxmert's outputs that contain the last hidden states, pooled outputs, and attention probabilities for the language,
+    visual, and, cross-modality encoders. (note: the visual encoder in Lxmert is referred to as the "relation-ship"
+    encoder")
+
+
+    Args:
+        language_output (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
+            Sequence of hidden-states at the output of the last layer of the language encoder.
+        pooled_output (`torch.FloatTensor` of shape `(batch_size, hidden_size)`):
+            Last layer hidden-state of the first token of the sequence (classification, CLS, token) further processed
+            by a Linear layer and a Tanh activation function. The Linear
+        language_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
+            Tuple of `torch.FloatTensor` (one for input features + one for the output of each cross-modality layer) of
+            shape `(batch_size, sequence_length, hidden_size)`.
+        language_attentions (`tuple(torch.FloatTensor)`, *optional*, returned when `output_attentions=True` is passed or when `config.output_attentions=True`):
+            Tuple of `torch.FloatTensor` (one for each layer) of shape `(batch_size, num_heads, sequence_length,
+            sequence_length)`. Attentions weights after the attention softmax, used to compute the weighted average in
+            the self-attention heads.
+    """
+
+    language_output: Optional[torch.FloatTensor] = None
+    pooled_output: Optional[torch.FloatTensor] = None
+    language_hidden_states: Optional[Tuple[torch.FloatTensor]] = None
+    language_attentions: Optional[Tuple[torch.FloatTensor]] = None
+
+
+@dataclass
+class LxmertRelationalModelOutput(ModelOutput):
+    """
+    Lxmert's outputs that contain the last hidden states, pooled outputs, and attention probabilities for the language,
+    visual, and, cross-modality encoders. (note: the visual encoder in Lxmert is referred to as the "relation-ship"
+    encoder")
+
+
+    Args:
+        vision_output (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
+            Sequence of hidden-states at the output of the last layer of the visual encoder.
+        vision_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
+            Tuple of `torch.FloatTensor` (one for input features + one for the output of each cross-modality layer) of
+            shape `(batch_size, sequence_length, hidden_size)`.
+        vision_attentions (`tuple(torch.FloatTensor)`, *optional*, returned when `output_attentions=True` is passed or when `config.output_attentions=True`):
+            Tuple of `torch.FloatTensor` (one for each layer) of shape `(batch_size, num_heads, sequence_length,
+            sequence_length)`. Attentions weights after the attention softmax, used to compute the weighted average in
+            the self-attention heads.
+    """
+
+    vision_output: Optional[torch.FloatTensor] = None
+    vision_hidden_states: Optional[Tuple[torch.FloatTensor]] = None
+    vision_attentions: Optional[Tuple[torch.FloatTensor]] = None
+
+
+@dataclass
+class LxmertCrossModalityModelOutput(ModelOutput):
+    """
+    Lxmert's outputs that contain the last hidden states, pooled outputs, and attention probabilities for the language,
+    visual, and, cross-modality encoders. (note: the visual encoder in Lxmert is referred to as the "relation-ship"
+    encoder")
+
+
+    Args:
+        language_output (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
+            Sequence of hidden-states at the output of the last layer of the language encoder.
+        vision_output (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
+            Sequence of hidden-states at the output of the last layer of the visual encoder.
+        pooled_output (`torch.FloatTensor` of shape `(batch_size, hidden_size)`):
+            Last layer hidden-state of the first token of the sequence (classification, CLS, token) further processed
+            by a Linear layer and a Tanh activation function. The Linear
+        language_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
+            Tuple of `torch.FloatTensor` (one for input features + one for the output of each cross-modality layer) of
+            shape `(batch_size, sequence_length, hidden_size)`.
+        vision_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
+            Tuple of `torch.FloatTensor` (one for input features + one for the output of each cross-modality layer) of
+            shape `(batch_size, sequence_length, hidden_size)`.
+        language_attentions (`tuple(torch.FloatTensor)`, *optional*, returned when `output_attentions=True` is passed or when `config.output_attentions=True`):
+            Tuple of `torch.FloatTensor` (one for each layer) of shape `(batch_size, num_heads, sequence_length,
+            sequence_length)`. Attentions weights after the attention softmax, used to compute the weighted average in
+            the self-attention heads.
+        vision_attentions (`tuple(torch.FloatTensor)`, *optional*, returned when `output_attentions=True` is passed or when `config.output_attentions=True`):
+            Tuple of `torch.FloatTensor` (one for each layer) of shape `(batch_size, num_heads, sequence_length,
+            sequence_length)`. Attentions weights after the attention softmax, used to compute the weighted average in
+            the self-attention heads.
+        cross_encoder_attentions (`tuple(torch.FloatTensor)`, *optional*, returned when `output_attentions=True` is passed or when `config.output_attentions=True`):
+            Tuple of `torch.FloatTensor` (one for each layer) of shape `(batch_size, num_heads, sequence_length,
+            sequence_length)`. Attentions weights after the attention softmax, used to compute the weighted average in
+            the self-attention heads.
+    """
+
+    language_output: Optional[torch.FloatTensor] = None
+    vision_output: Optional[torch.FloatTensor] = None
+    pooled_output: Optional[torch.FloatTensor] = None
+    language_hidden_states: Optional[Tuple[torch.FloatTensor]] = None
+    vision_hidden_states: Optional[Tuple[torch.FloatTensor]] = None
+    language_attentions: Optional[Tuple[torch.FloatTensor]] = None
+    vision_attentions: Optional[Tuple[torch.FloatTensor]] = None
+    cross_encoder_attentions: Optional[Tuple[torch.FloatTensor]] = None
+
+
+@dataclass
 class LxmertForQuestionAnsweringOutput(ModelOutput):
     """
     Output type of [`LxmertForQuestionAnswering`].
@@ -664,6 +764,152 @@ class LxmertEncoder(nn.Module):
         )
 
 
+class LxmertLanguageEncoder(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+
+        self.config = config
+
+        # Number of layers
+        self.num_l_layers = self.config.l_layers
+
+        # Layers
+        # Using self.layer instead of self.l_layer to support loading BERT weights.
+        self.layer = nn.ModuleList([LxmertLayer(config) for _ in range(self.num_l_layers)])
+
+    def forward(
+        self,
+        lang_feats,
+        lang_attention_mask,
+        output_attentions=None,
+    ):
+
+        language_hidden_states = ()
+        language_attentions = () if output_attentions or self.config.output_attentions else None
+
+        # Run language layers
+        for layer_module in self.layer:
+            l_outputs = layer_module(lang_feats, lang_attention_mask, output_attentions=output_attentions)
+            lang_feats = l_outputs[0]
+            language_hidden_states = language_hidden_states + (lang_feats,)
+            if language_attentions is not None:
+                language_attentions = language_attentions + (l_outputs[1],)
+
+        return (
+            language_hidden_states,
+            language_attentions if output_attentions else None,
+        )
+
+
+class LxmertRelationalEncoder(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+
+        # Obj-level image embedding layer
+        self.visn_fc = LxmertVisualFeatureEncoder(config)
+        self.config = config
+
+        # Number of layers
+        self.num_r_layers = config.r_layers
+
+        # Layers
+        # Using self.layer instead of self.l_layer to support loading BERT weights.
+        self.r_layers = nn.ModuleList([LxmertLayer(config) for _ in range(self.num_r_layers)])
+
+    def forward(
+        self,
+        visual_feats,
+        visual_pos,
+        visual_attention_mask=None,
+        output_attentions=None,
+    ):
+
+        vision_hidden_states = ()
+        vision_attentions = () if output_attentions or self.config.output_attentions else None
+        cross_encoder_attentions = () if output_attentions or self.config.output_attentions else None
+
+        visual_feats = self.visn_fc(visual_feats, visual_pos)
+
+        # Run relational layers
+        for layer_module in self.r_layers:
+            v_outputs = layer_module(visual_feats, visual_attention_mask, output_attentions=output_attentions)
+            visual_feats = v_outputs[0]
+            vision_hidden_states = vision_hidden_states + (visual_feats,)
+            if vision_attentions is not None:
+                vision_attentions = vision_attentions + (v_outputs[1],)
+
+        visual_encoder_outputs = (
+            vision_hidden_states,
+            vision_attentions if output_attentions else None,
+        )
+        return (
+            visual_encoder_outputs,
+            vision_attentions,
+            cross_encoder_attentions if output_attentions else None,
+        )
+
+
+class LxmertCrossModalityEncoder(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+
+        # Obj-level image embedding layer
+        self.visn_fc = LxmertVisualFeatureEncoder(config)
+        self.config = config
+
+        self.num_x_layers = config.x_layers
+
+        # Layers
+        self.x_layers = nn.ModuleList([LxmertXLayer(config) for _ in range(self.num_x_layers)])
+
+    def forward(
+        self,
+        lang_feats,
+        lang_attention_mask,
+        visual_feats,
+        visual_pos,
+        visual_attention_mask=None,
+        output_attentions=None,
+    ):
+
+        vision_hidden_states = ()
+        language_hidden_states = ()
+        vision_attentions = () if output_attentions or self.config.output_attentions else None
+        language_attentions = () if output_attentions or self.config.output_attentions else None
+        cross_encoder_attentions = () if output_attentions or self.config.output_attentions else None
+
+        visual_feats = self.visn_fc(visual_feats, visual_pos)
+
+        # Run cross-modality layers
+        for layer_module in self.x_layers:
+            x_outputs = layer_module(
+                lang_feats,
+                lang_attention_mask,
+                visual_feats,
+                visual_attention_mask,
+                output_attentions=output_attentions,
+            )
+            lang_feats, visual_feats = x_outputs[:2]
+            vision_hidden_states = vision_hidden_states + (visual_feats,)
+            language_hidden_states = language_hidden_states + (lang_feats,)
+            if cross_encoder_attentions is not None:
+                cross_encoder_attentions = cross_encoder_attentions + (x_outputs[2],)
+
+        visual_encoder_outputs = (
+            vision_hidden_states,
+            vision_attentions if output_attentions else None,
+        )
+        lang_encoder_outputs = (
+            language_hidden_states,
+            language_attentions if output_attentions else None,
+        )
+        return (
+            visual_encoder_outputs,
+            lang_encoder_outputs,
+            cross_encoder_attentions if output_attentions else None,
+        )
+
+
 class LxmertPooler(nn.Module):
     def __init__(self, config):
         super(LxmertPooler, self).__init__()
@@ -1007,6 +1253,345 @@ class LxmertModel(LxmertPreTrainedModel):
             return (lang_output, visual_output, pooled_output) + hidden_states + all_attentions
 
         return LxmertModelOutput(
+            pooled_output=pooled_output,
+            language_output=lang_output,
+            vision_output=visual_output,
+            language_hidden_states=language_hidden_states if output_hidden_states else None,
+            vision_hidden_states=vision_hidden_states if output_hidden_states else None,
+            language_attentions=language_attentions if output_attentions else None,
+            vision_attentions=vision_attentions if output_attentions else None,
+            cross_encoder_attentions=cross_encoder_attentions if output_attentions else None,
+        )
+
+
+@add_start_docstrings(
+    "The language only Lxmert Model transformer outputting raw hidden-states without any specific head on top.",
+    LXMERT_START_DOCSTRING,
+)
+class LxmertLanguageModel(LxmertPreTrainedModel):
+    def __init__(self, config):
+        super().__init__(config)
+        self.embeddings = LxmertEmbeddings(config)
+        self.encoder = LxmertLanguageEncoder(config)
+        self.pooler = LxmertPooler(config)
+        # Initialize weights and apply final processing
+        self.post_init()
+
+    def get_input_embeddings(self):
+        return self.embeddings.word_embeddings
+
+    def set_input_embeddings(self, new_embeddings):
+        self.embeddings.word_embeddings = new_embeddings
+
+    @add_start_docstrings_to_model_forward(LXMERT_INPUTS_DOCSTRING.format("batch_size, sequence_length"))
+    @add_code_sample_docstrings(
+        processor_class=_TOKENIZER_FOR_DOC,
+        checkpoint=_CHECKPOINT_FOR_DOC,
+        output_type=LxmertModelOutput,
+        config_class=_CONFIG_FOR_DOC,
+    )
+    def forward(
+        self,
+        input_ids: Optional[torch.LongTensor] = None,
+        attention_mask: Optional[torch.FloatTensor] = None,
+        token_type_ids: Optional[torch.LongTensor] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        return_dict: Optional[bool] = None,
+    ) -> Union[LxmertModelOutput, Tuple[torch.FloatTensor]]:
+
+        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+        output_hidden_states = (
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+        )
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+
+        if input_ids is not None and inputs_embeds is not None:
+            raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
+        elif input_ids is not None:
+            input_shape = input_ids.size()
+        elif inputs_embeds is not None:
+            input_shape = inputs_embeds.size()[:-1]
+        else:
+            raise ValueError("You have to specify either input_ids or inputs_embeds")
+
+        device = input_ids.device if input_ids is not None else inputs_embeds.device
+
+        if attention_mask is None:
+            attention_mask = torch.ones(input_shape, device=device)
+        if token_type_ids is None:
+            token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=device)
+
+        # We create a 3D attention mask from a 2D tensor mask.
+        # Sizes are [batch_size, 1, 1, to_seq_length]
+        # So we can broadcast to [batch_size, num_heads, from_seq_length, to_seq_length]
+        # this attention mask is more simple than the triangular masking of causal attention
+        # used in OpenAI GPT, we just need to prepare the broadcast dimension here.
+        extended_attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)
+
+        # Since attention_mask is 1.0 for positions we want to attend and 0.0 for
+        # masked positions, this operation will create a tensor which is 0.0 for
+        # positions we want to attend and the dtype's smallest value for masked positions.
+        # Since we are adding it to the raw scores before the softmax, this is
+        # effectively the same as removing these entirely.
+        extended_attention_mask = extended_attention_mask.to(dtype=self.dtype)
+        extended_attention_mask = (1.0 - extended_attention_mask) * torch.finfo(self.dtype).min
+
+        # Positional Word Embeddings
+        embedding_output = self.embeddings(input_ids, token_type_ids, inputs_embeds)
+
+        # Run Lxmert encoder
+        # TODO(@yetiansh): here add profiler start.
+        encoder_outputs = self.encoder(
+            embedding_output,
+            extended_attention_mask,
+            output_attentions=output_attentions,
+        )
+        # TODO(@yetiansh): here add profiler stop.
+
+        language_hidden_states = encoder_outputs[0]
+
+        all_attentions = ()
+        if output_attentions:
+            language_attentions = encoder_outputs[1]
+            all_attentions = (
+                language_attentions,
+            )
+
+        hidden_states = (language_hidden_states,) if output_hidden_states else ()
+
+        lang_output = language_hidden_states[-1]
+        pooled_output = self.pooler(lang_output)
+
+        if not return_dict:
+            return (lang_output, pooled_output) + hidden_states + all_attentions
+
+        return LxmertLanguageModelOutput(
+            pooled_output=pooled_output,
+            language_output=lang_output,
+            language_hidden_states=language_hidden_states if output_hidden_states else None,
+            language_attentions=language_attentions if output_attentions else None,
+        )
+
+
+@add_start_docstrings(
+    "The relation only Lxmert Model transformer outputting raw hidden-states without any specific head on top.",
+    LXMERT_START_DOCSTRING,
+)
+class LxmertRelationalModel(LxmertPreTrainedModel):
+    def __init__(self, config):
+        super().__init__(config)
+        self.embeddings = LxmertEmbeddings(config)
+        self.encoder = LxmertRelationalEncoder(config)
+        self.pooler = LxmertPooler(config)
+        # Initialize weights and apply final processing
+        self.post_init()
+
+    def get_input_embeddings(self):
+        return self.embeddings.word_embeddings
+
+    def set_input_embeddings(self, new_embeddings):
+        self.embeddings.word_embeddings = new_embeddings
+
+    @add_start_docstrings_to_model_forward(LXMERT_INPUTS_DOCSTRING.format("batch_size, sequence_length"))
+    @add_code_sample_docstrings(
+        processor_class=_TOKENIZER_FOR_DOC,
+        checkpoint=_CHECKPOINT_FOR_DOC,
+        output_type=LxmertModelOutput,
+        config_class=_CONFIG_FOR_DOC,
+    )
+    def forward(
+        self,
+        visual_feats: Optional[torch.FloatTensor] = None,
+        visual_pos: Optional[torch.FloatTensor] = None,
+        visual_attention_mask: Optional[torch.FloatTensor] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        return_dict: Optional[bool] = None,
+    ) -> Union[LxmertModelOutput, Tuple[torch.FloatTensor]]:
+
+        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+        output_hidden_states = (
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+        )
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+
+        if visual_feats is None:
+            raise ValueError("`visual_feats` cannot be `None`")
+        if visual_pos is None:
+            raise ValueError("`visual_pos` cannot be `None`")
+
+        device = visual_feats.device
+
+        # Process the visual attention mask
+        if visual_attention_mask is not None:
+            extended_visual_attention_mask = visual_attention_mask.unsqueeze(1).unsqueeze(2)
+            extended_visual_attention_mask = extended_visual_attention_mask.to(dtype=self.dtype)
+            extended_visual_attention_mask = (1.0 - extended_visual_attention_mask) * torch.finfo(self.dtype).min
+        else:
+            extended_visual_attention_mask = None
+
+        # Run Lxmert encoder
+        encoder_outputs = self.encoder(
+            visual_feats=visual_feats,
+            visual_pos=visual_pos,
+            visual_attention_mask=extended_visual_attention_mask,
+            output_attentions=output_attentions,
+        )
+
+        visual_encoder_outputs = encoder_outputs[:2]
+        vision_hidden_states = visual_encoder_outputs[0]
+
+        all_attentions = ()
+        if output_attentions:
+            vision_attentions = visual_encoder_outputs[1]
+            all_attentions = (
+                vision_attentions,
+            )
+
+        hidden_states = (vision_hidden_states,) if output_hidden_states else ()
+
+        visual_output = vision_hidden_states[-1]
+
+        if not return_dict:
+            return (visual_output,) + hidden_states + all_attentions
+
+        return LxmertRelationalModelOutput(
+            vision_output=visual_output,
+            vision_hidden_states=vision_hidden_states if output_hidden_states else None,
+            vision_attentions=all_attentions if output_attentions else None,
+        )
+
+
+@add_start_docstrings(
+    "The cross modality only Lxmert Model transformer outputting raw hidden-states without any specific head on top.",
+    LXMERT_START_DOCSTRING,
+)
+class LxmertCrossModalityModel(LxmertPreTrainedModel):
+    def __init__(self, config):
+        super().__init__(config)
+        self.embeddings = LxmertEmbeddings(config)
+        self.encoder = LxmertCrossModalityEncoder(config)
+        self.pooler = LxmertPooler(config)
+        # Initialize weights and apply final processing
+        self.post_init()
+
+    def get_input_embeddings(self):
+        return self.embeddings.word_embeddings
+
+    def set_input_embeddings(self, new_embeddings):
+        self.embeddings.word_embeddings = new_embeddings
+
+    @add_start_docstrings_to_model_forward(LXMERT_INPUTS_DOCSTRING.format("batch_size, sequence_length"))
+    @add_code_sample_docstrings(
+        processor_class=_TOKENIZER_FOR_DOC,
+        checkpoint=_CHECKPOINT_FOR_DOC,
+        output_type=LxmertModelOutput,
+        config_class=_CONFIG_FOR_DOC,
+    )
+    def forward(
+        self,
+        input_ids: Optional[torch.LongTensor] = None,
+        visual_feats: Optional[torch.FloatTensor] = None,
+        visual_pos: Optional[torch.FloatTensor] = None,
+        attention_mask: Optional[torch.FloatTensor] = None,
+        visual_attention_mask: Optional[torch.FloatTensor] = None,
+        token_type_ids: Optional[torch.LongTensor] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        return_dict: Optional[bool] = None,
+    ) -> Union[LxmertModelOutput, Tuple[torch.FloatTensor]]:
+
+        output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
+        output_hidden_states = (
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+        )
+        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+
+        if input_ids is not None and inputs_embeds is not None:
+            raise ValueError("You cannot specify both input_ids and inputs_embeds at the same time")
+        elif input_ids is not None:
+            input_shape = input_ids.size()
+        elif inputs_embeds is not None:
+            input_shape = inputs_embeds.size()[:-1]
+        else:
+            raise ValueError("You have to specify either input_ids or inputs_embeds")
+
+        if visual_feats is None:
+            raise ValueError("`visual_feats` cannot be `None`")
+        if visual_pos is None:
+            raise ValueError("`visual_pos` cannot be `None`")
+
+        device = input_ids.device if input_ids is not None else inputs_embeds.device
+
+        if attention_mask is None:
+            attention_mask = torch.ones(input_shape, device=device)
+        if token_type_ids is None:
+            token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=device)
+
+        # We create a 3D attention mask from a 2D tensor mask.
+        # Sizes are [batch_size, 1, 1, to_seq_length]
+        # So we can broadcast to [batch_size, num_heads, from_seq_length, to_seq_length]
+        # this attention mask is more simple than the triangular masking of causal attention
+        # used in OpenAI GPT, we just need to prepare the broadcast dimension here.
+        extended_attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)
+
+        # Since attention_mask is 1.0 for positions we want to attend and 0.0 for
+        # masked positions, this operation will create a tensor which is 0.0 for
+        # positions we want to attend and the dtype's smallest value for masked positions.
+        # Since we are adding it to the raw scores before the softmax, this is
+        # effectively the same as removing these entirely.
+        extended_attention_mask = extended_attention_mask.to(dtype=self.dtype)
+        extended_attention_mask = (1.0 - extended_attention_mask) * torch.finfo(self.dtype).min
+
+        # Process the visual attention mask
+        if visual_attention_mask is not None:
+            extended_visual_attention_mask = visual_attention_mask.unsqueeze(1).unsqueeze(2)
+            extended_visual_attention_mask = extended_visual_attention_mask.to(dtype=self.dtype)
+            extended_visual_attention_mask = (1.0 - extended_visual_attention_mask) * torch.finfo(self.dtype).min
+        else:
+            extended_visual_attention_mask = None
+
+        # Positional Word Embeddings
+        embedding_output = self.embeddings(input_ids, token_type_ids, inputs_embeds)
+
+        # Run Lxmert encoder
+        encoder_outputs = self.encoder(
+            embedding_output,
+            extended_attention_mask,
+            visual_feats=visual_feats,
+            visual_pos=visual_pos,
+            visual_attention_mask=extended_visual_attention_mask,
+            output_attentions=output_attentions,
+        )
+
+        visual_encoder_outputs, lang_encoder_outputs = encoder_outputs[:2]
+        vision_hidden_states = visual_encoder_outputs[0]
+        language_hidden_states = lang_encoder_outputs[0]
+
+        all_attentions = ()
+        if output_attentions:
+            language_attentions = lang_encoder_outputs[1]
+            vision_attentions = visual_encoder_outputs[1]
+            cross_encoder_attentions = encoder_outputs[2]
+            all_attentions = (
+                language_attentions,
+                vision_attentions,
+                cross_encoder_attentions,
+            )
+
+        hidden_states = (language_hidden_states, vision_hidden_states) if output_hidden_states else ()
+
+        visual_output = vision_hidden_states[-1]
+        lang_output = language_hidden_states[-1]
+        pooled_output = self.pooler(lang_output)
+
+        if not return_dict:
+            return (lang_output, visual_output, pooled_output) + hidden_states + all_attentions
+
+        return LxmertCrossModalityModelOutput(
             pooled_output=pooled_output,
             language_output=lang_output,
             vision_output=visual_output,
