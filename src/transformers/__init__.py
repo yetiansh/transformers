@@ -4367,9 +4367,15 @@ if TYPE_CHECKING:
         )
         from .models.lxmert import (
             LxmertEncoder,
+            LxmertLanguageEncoder,
+            LxmertRelationalEncoder,
+            LxmertCrossModalityEncoder,
             LxmertForPreTraining,
             LxmertForQuestionAnswering,
             LxmertModel,
+            LxmertLanguageModel,
+            LxmertRelationalModel,
+            LxmertCrossModalityModel,
             LxmertPreTrainedModel,
             LxmertVisualFeatureEncoder,
             LxmertXLayer,

@@ -48,9 +48,15 @@ except OptionalDependencyNotAvailable:
 else:
     _import_structure["modeling_lxmert"] = [
         "LxmertEncoder",
+        "LxmertLanguageEncoder",
+        "LxmertRelationalEncoder",
+        "LxmertCrossModalityEncoder",
         "LxmertForPreTraining",
         "LxmertForQuestionAnswering",
         "LxmertModel",
+        "LxmertLanguageModel",
+        "LxmertRelationalModel",
+        "LxmertCrossModalityModel",
         "LxmertPreTrainedModel",
         "LxmertVisualFeatureEncoder",
         "LxmertXLayer",
@@ -92,9 +98,15 @@ if TYPE_CHECKING:
     else:
         from .modeling_lxmert import (
             LxmertEncoder,
+            LxmertLanguageEncoder,
+            LxmertRelationalEncoder,
+            LxmertCrossModalityEncoder,
             LxmertForPreTraining,
             LxmertForQuestionAnswering,
             LxmertModel,
+            LxmertLanguageModel,
+            LxmertRelationalModel,
+            LxmertCrossModalityModel,
             LxmertPreTrainedModel,
             LxmertVisualFeatureEncoder,
             LxmertXLayer,
