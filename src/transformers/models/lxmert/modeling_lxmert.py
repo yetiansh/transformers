@@ -24,6 +24,7 @@ from typing import Dict, Optional, Tuple, Union
 import torch
 from torch import nn
 from torch.nn import CrossEntropyLoss, SmoothL1Loss
+from torch.profiler import record_function
 
 from ...activations import ACT2FN, gelu
 from ...modeling_utils import PreTrainedModel
@@ -717,38 +718,42 @@ class LxmertEncoder(nn.Module):
         language_attentions = () if output_attentions or self.config.output_attentions else None
         cross_encoder_attentions = () if output_attentions or self.config.output_attentions else None
 
-        visual_feats = self.visn_fc(visual_feats, visual_pos)
+        with record_function("lxmert.encoder.visual_feats"):
+            visual_feats = self.visn_fc(visual_feats, visual_pos)
 
         # Run language layers
-        for layer_module in self.layer:
-            l_outputs = layer_module(lang_feats, lang_attention_mask, output_attentions=output_attentions)
-            lang_feats = l_outputs[0]
-            language_hidden_states = language_hidden_states + (lang_feats,)
-            if language_attentions is not None:
-                language_attentions = language_attentions + (l_outputs[1],)
+        with record_function("lxmert.encoder.language_layers"):
+            for layer_module in self.layer:
+                l_outputs = layer_module(lang_feats, lang_attention_mask, output_attentions=output_attentions)
+                lang_feats = l_outputs[0]
+                language_hidden_states = language_hidden_states + (lang_feats,)
+                if language_attentions is not None:
+                    language_attentions = language_attentions + (l_outputs[1],)
 
         # Run relational layers
-        for layer_module in self.r_layers:
-            v_outputs = layer_module(visual_feats, visual_attention_mask, output_attentions=output_attentions)
-            visual_feats = v_outputs[0]
-            vision_hidden_states = vision_hidden_states + (visual_feats,)
-            if vision_attentions is not None:
-                vision_attentions = vision_attentions + (v_outputs[1],)
+        with record_function("lxmert.encoder.relational_layers"):
+            for layer_module in self.r_layers:
+                v_outputs = layer_module(visual_feats, visual_attention_mask, output_attentions=output_attentions)
+                visual_feats = v_outputs[0]
+                vision_hidden_states = vision_hidden_states + (visual_feats,)
+                if vision_attentions is not None:
+                    vision_attentions = vision_attentions + (v_outputs[1],)
 
         # Run cross-modality layers
-        for layer_module in self.x_layers:
-            x_outputs = layer_module(
-                lang_feats,
-                lang_attention_mask,
-                visual_feats,
-                visual_attention_mask,
-                output_attentions=output_attentions,
-            )
-            lang_feats, visual_feats = x_outputs[:2]
-            vision_hidden_states = vision_hidden_states + (visual_feats,)
-            language_hidden_states = language_hidden_states + (lang_feats,)
-            if cross_encoder_attentions is not None:
-                cross_encoder_attentions = cross_encoder_attentions + (x_outputs[2],)
+        with record_function("lxmert.encoder.cross_modality_layers"):
+            for layer_module in self.x_layers:
+                x_outputs = layer_module(
+                    lang_feats,
+                    lang_attention_mask,
+                    visual_feats,
+                    visual_attention_mask,
+                    output_attentions=output_attentions,
+                )
+                lang_feats, visual_feats = x_outputs[:2]
+                vision_hidden_states = vision_hidden_states + (visual_feats,)
+                language_hidden_states = language_hidden_states + (lang_feats,)
+                if cross_encoder_attentions is not None:
+                    cross_encoder_attentions = cross_encoder_attentions + (x_outputs[2],)
         visual_encoder_outputs = (
             vision_hidden_states,
             vision_attentions if output_attentions else None,
@@ -1219,14 +1224,15 @@ class LxmertModel(LxmertPreTrainedModel):
         embedding_output = self.embeddings(input_ids, token_type_ids, inputs_embeds)
 
         # Run Lxmert encoder
-        encoder_outputs = self.encoder(
-            embedding_output,
-            extended_attention_mask,
-            visual_feats=visual_feats,
-            visual_pos=visual_pos,
-            visual_attention_mask=extended_visual_attention_mask,
-            output_attentions=output_attentions,
-        )
+        with record_function("lxmert.encoder"):
+            encoder_outputs = self.encoder(
+                embedding_output,
+                extended_attention_mask,
+                visual_feats=visual_feats,
+                visual_pos=visual_pos,
+                visual_attention_mask=extended_visual_attention_mask,
+                output_attentions=output_attentions,
+            )
 
         visual_encoder_outputs, lang_encoder_outputs = encoder_outputs[:2]
         vision_hidden_states = visual_encoder_outputs[0]
@@ -1343,11 +1349,12 @@ class LxmertLanguageModel(LxmertPreTrainedModel):
 
         # Run Lxmert encoder
         # TODO(@yetiansh): here add profiler start.
-        encoder_outputs = self.encoder(
-            embedding_output,
-            extended_attention_mask,
-            output_attentions=output_attentions,
-        )
+        with record_function("lxmert_language.encoder"):
+            encoder_outputs = self.encoder(
+                embedding_output,
+                extended_attention_mask,
+                output_attentions=output_attentions,
+            )
         # TODO(@yetiansh): here add profiler stop.
 
         language_hidden_states = encoder_outputs[0]
@@ -1431,12 +1438,13 @@ class LxmertRelationalModel(LxmertPreTrainedModel):
             extended_visual_attention_mask = None
 
         # Run Lxmert encoder
-        encoder_outputs = self.encoder(
-            visual_feats=visual_feats,
-            visual_pos=visual_pos,
-            visual_attention_mask=extended_visual_attention_mask,
-            output_attentions=output_attentions,
-        )
+        with record_function("lxmert_relational.encoder"):
+            encoder_outputs = self.encoder(
+                visual_feats=visual_feats,
+                visual_pos=visual_pos,
+                visual_attention_mask=extended_visual_attention_mask,
+                output_attentions=output_attentions,
+            )
 
         visual_encoder_outputs = encoder_outputs[:2]
         vision_hidden_states = visual_encoder_outputs[0]
@@ -1556,14 +1564,15 @@ class LxmertCrossModalityModel(LxmertPreTrainedModel):
         embedding_output = self.embeddings(input_ids, token_type_ids, inputs_embeds)
 
         # Run Lxmert encoder
-        encoder_outputs = self.encoder(
-            embedding_output,
-            extended_attention_mask,
-            visual_feats=visual_feats,
-            visual_pos=visual_pos,
-            visual_attention_mask=extended_visual_attention_mask,
-            output_attentions=output_attentions,
-        )
+        with record_function("lxmert_cross_modality.encoder"):
+            encoder_outputs = self.encoder(
+                embedding_output,
+                extended_attention_mask,
+                visual_feats=visual_feats,
+                visual_pos=visual_pos,
+                visual_attention_mask=extended_visual_attention_mask,
+                output_attentions=output_attentions,
+            )
 
         visual_encoder_outputs, lang_encoder_outputs = encoder_outputs[:2]
         vision_hidden_states = visual_encoder_outputs[0]
