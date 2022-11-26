@@ -1794,18 +1794,19 @@ class LxmertForPreTraining(LxmertPreTrainedModel):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         device = input_ids.device if input_ids is not None else inputs_embeds.device
-        lxmert_output = self.lxmert(
-            input_ids=input_ids,
-            visual_feats=visual_feats,
-            visual_pos=visual_pos,
-            token_type_ids=token_type_ids,
-            attention_mask=attention_mask,
-            visual_attention_mask=visual_attention_mask,
-            inputs_embeds=inputs_embeds,
-            output_hidden_states=output_hidden_states,
-            output_attentions=output_attentions,
-            return_dict=return_dict,
-        )
+        with record_function("lxmert_for_pretraining.forward_backbone"):
+            lxmert_output = self.lxmert(
+                input_ids=input_ids,
+                visual_feats=visual_feats,
+                visual_pos=visual_pos,
+                token_type_ids=token_type_ids,
+                attention_mask=attention_mask,
+                visual_attention_mask=visual_attention_mask,
+                inputs_embeds=inputs_embeds,
+                output_hidden_states=output_hidden_states,
+                output_attentions=output_attentions,
+                return_dict=return_dict,
+            )
 
         lang_output, visual_output, pooled_output = (
             lxmert_output[0],
