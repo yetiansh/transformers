@@ -1046,7 +1046,8 @@ class LxmertForPreTraining(LxmertPreTrainedModel):
         self.lxmert = LxmertModel(config)
 
         # Pre-training heads
-        self.cls = LxmertPreTrainingHeads(config, self.lxmert.embeddings.word_embeddings.weight)
+        if self.task_mask_lm or self.task_matched:
+            self.cls = LxmertPreTrainingHeads(config, self.lxmert.embeddings.word_embeddings.weight)
         if self.task_obj_predict:
             self.obj_predict_head = LxmertVisualObjHead(config)
         if self.task_qa:
